@@ -1,7 +1,7 @@
 {
   "name": "image-genetic-algorithm",
   "version": "1.0.0",
-  "description": "An evolutionary genetic algorithm which creates images using triangles",
+  "description": "A genetic algorithm which creates images using triangles",
   "main": "./build/index.html",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
