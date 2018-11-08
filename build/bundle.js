@@ -30,12 +30,25 @@ const enableMouse = canvas => {
 const newRandomPoint = () => [Math.floor(Math.random() * width), Math.floor(Math.random() * height)];
 const newRandomRGB = () => [Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.random()];
 
-const newTriangle = () => ({
-  p1: newRandomPoint(),
-  p2: newRandomPoint(),
-  p3: newRandomPoint(),
-  colour: newRandomRGB(),
-});
+const newTriangle = () => {
+  const p1 = newRandomPoint();
+  const p2 = newRandomPoint();
+  const p3 = newRandomPoint();
+  const colour = newRandomRGB();
+
+  const { r, g, b, a } = colour;
+
+  const attributesMap = [p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, r, g, b, a];
+  const mutationMap = [mutateX, mutateY, mutateX, mutateY, mutateX, mutateY, mutateColour, mutateColour, mutateColour, mutateAlpha];
+
+  const mutate = () => {
+    const thingToMutate = Math.floor(Math.random() * 10);
+
+    
+  }
+
+  return { p1, p2, p3, colour, mutate };
+};
 
 const newGenome = () => [...Array(numTriangles)].map(newTriangle);
 
@@ -84,8 +97,8 @@ const mutate = (genome, index) => {
 
   [...Array(numMutations)].forEach(() => {
     const geneToMutate = Math.floor(Math.random() * genome.length);
-    genome.splice(geneToMutate, 1)
-    genome.push(newTriangle());
+    const triangle = genome.splice(geneToMutate, 1)
+    genome.push(triangle.mutate());
   })
   return genome;
 };
