@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "A genetic algorithm which creates images using triangles",
   "main": "./build/index.html",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tomgb/image-genetic-algorithm"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "browserify ./src/app.js -o ./build/bundle.js",
