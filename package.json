@@ -14,8 +14,5 @@
   "devDependencies": {
     "browserify": "^16.2.3",
     "watchify": "^3.11.0"
-  },
-  "dependencies": {
-    "resemble": "^1.4.0"
   }
 }
