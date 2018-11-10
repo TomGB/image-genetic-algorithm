@@ -8,13 +8,21 @@ const {
 const loadImage = require('./loadImage');
 const drawGenomeInBrowser = require('./drawGenomeInBrowser');
 const drawTriangle = require('./drawTriangle');
+const setupMutate = require('./mutate');
 
 const width = 875;
 const height = 350;
 
+const {
+  mutateX,
+  mutateY,
+  mutateColour,
+  mutateAlpha,
+} = setupMutate(width, height);
+
 const populationSize = 30;
 const numTriangles = 50;
-const mutationPercentage = 0.04;
+const mutationPercentage = 0.1;
 const cullPercentage = 0.8;
 const newBloodPercentage = 0;
 
@@ -25,34 +33,60 @@ const enableMouse = canvas => {
     var i = (y * imgData.width + x)*4, d = imgData.data;
     console.log([d[i],d[i+1],d[i+2],d[i+3]]);
   })
+};
+
+const v = (init, mutateFunction) => {
+  let value = init;
+
+  return {
+    set: _new => value = _new,
+    get: () => value,
+    clone: () => v(value, mutateFunction),
+    mutate: () => value = mutateFunction(value),
+  }
 }
 
-const newRandomPoint = () => [Math.floor(Math.random() * width), Math.floor(Math.random() * height)];
-const newRandomRGB = () => [Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.random()];
+const point = (_x, _y) => {
+  const x = _x || v(Math.floor(Math.random() * width), mutateX);
+  const y = _y || v(Math.floor(Math.random() * height), mutateY);
+  const clone = () => point(x.clone(), y.clone());
 
-const newTriangle = () => {
-  const p1 = newRandomPoint();
-  const p2 = newRandomPoint();
-  const p3 = newRandomPoint();
-  const colour = newRandomRGB();
+  return { x, y, clone };
+};
+
+const rgb = (_r, _g, _b, _a) => {
+  const r = _r || v(Math.floor(Math.random() * 255), mutateColour);
+  const g = _g || v(Math.floor(Math.random() * 255), mutateColour);
+  const b = _b || v(Math.floor(Math.random() * 255), mutateColour);
+  const a = _a || v(Math.random(), mutateAlpha);
+  const clone = () => rgb(r.clone(), g.clone(), b.clone(), a.clone());
+
+  return { r, g, b, a, clone };
+};
+
+const newTriangle = (_p1, _p2, _p3, _colour) => {
+  const p1 = _p1 || point();
+  const p2 = _p2 || point();
+  const p3 = _p3 || point();
+  const colour = _colour || rgb();
 
   const { r, g, b, a } = colour;
 
   const attributesMap = [p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, r, g, b, a];
-  const mutationMap = [mutateX, mutateY, mutateX, mutateY, mutateX, mutateY, mutateColour, mutateColour, mutateColour, mutateAlpha];
 
   const mutate = () => {
     const thingToMutate = Math.floor(Math.random() * 10);
-
-    
+    attributesMap[thingToMutate].mutate();
   }
 
-  return { p1, p2, p3, colour, mutate };
+  const clone = () => newTriangle(p1.clone(), p2.clone(), p3.clone(), colour.clone())
+
+  return { p1, p2, p3, colour, mutate, clone };
 };
 
-const newGenome = () => [...Array(numTriangles)].map(newTriangle);
+const newGenome = () => [...Array(numTriangles)].map(() => newTriangle());
 
-const generations = [[...Array(populationSize)].map(newGenome)];
+let population = [...Array(populationSize)].map(newGenome);
 
 const createExperiment = image => generation => generation.map(genome => {
   const canvas = document.createElement('canvas');
@@ -72,7 +106,7 @@ const createExperiment = image => generation => generation.map(genome => {
   return { genome, fitness };
 });
 
-const mate = (a, b) => a.map((gene, index) => Math.random() < 0.5 ? gene : b[index]);
+const mate = (a, b) => a.map((gene, index) => Math.random() < 0.5 ? gene.clone() : b[index].clone());
 
 const breed = (survivers, quantity) => {
   const babies = [];
@@ -97,9 +131,13 @@ const mutate = (genome, index) => {
 
   [...Array(numMutations)].forEach(() => {
     const geneToMutate = Math.floor(Math.random() * genome.length);
-    const triangle = genome.splice(geneToMutate, 1)
-    genome.push(triangle.mutate());
-  })
+
+    const [triangle] = genome.splice(geneToMutate, 1);
+    const newTriangle = triangle.clone();
+    newTriangle.mutate();
+    genome.push(newTriangle);
+  });
+
   return genome;
 };
 
@@ -112,13 +150,13 @@ const generateNewPopulation = oldGen => {
   return mutatedPopulation;
 };
 
-const runGeneration = async (generation, image, index) => {
+const runGeneration = async (aPopulation, image, index) => {
   console.log('in gen', index);
   const runExperiment = createExperiment(image);
-  const outcome = runExperiment(generation);
+  const outcome = runExperiment(aPopulation);
   const populationByFitness = outcome.sort(({ fitness: a }, { fitness: b }) => a - b);
   console.log(populationByFitness.map(({ fitness }) => fitness));
-  generations.push(generateNewPopulation(populationByFitness));
+  population = generateNewPopulation(populationByFitness);
   return populationByFitness[0];
 }
 
@@ -132,7 +170,7 @@ const start = async () => {
   let genNum = 0;
 
   while (true) {
-    const newBest = await runGeneration(generations[genNum], image, genNum++);
+    const newBest = await runGeneration(population, image, genNum++);
     if (newBest.fitness !== previousBest) {
       await drawGenomeInBrowser(newBest.genome, image);
       previousBest = newBest.fitness;
@@ -144,7 +182,7 @@ const start = async () => {
 
 start();
 
-},{"./compareImageCanvas":2,"./drawGenomeInBrowser":3,"./drawTriangle":4,"./loadImage":5}],2:[function(require,module,exports){
+},{"./compareImageCanvas":2,"./drawGenomeInBrowser":3,"./drawTriangle":4,"./loadImage":5,"./mutate":6}],2:[function(require,module,exports){
 let imagePixels;
 
 const getCanvasPixels = canvas => {
@@ -225,18 +263,18 @@ module.exports = drawGenomeInBrowser;
 },{"./drawTriangle":4}],4:[function(require,module,exports){
 const drawTriangle = (ctx, triangle) => {
   const {
-    p1: [p1x, p1y],
-    p2: [p2x, p2y],
-    p3: [p3x, p3y],
-    colour: [r, g, b, a],
+    p1,
+    p2,
+    p3,
+    colour: { r, g, b, a },
   } = triangle;
 
-  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
+  ctx.fillStyle = `rgba(${r.get()}, ${g.get()}, ${b.get()}, ${a.get()})`;
 
   ctx.beginPath();
-  ctx.moveTo(p1x, p1y);
-  ctx.lineTo(p2x, p2y);
-  ctx.lineTo(p3x, p3y);
+  ctx.moveTo(p1.x.get(), p1.y.get());
+  ctx.lineTo(p2.x.get(), p2.y.get());
+  ctx.lineTo(p3.x.get(), p3.y.get());
   ctx.fill();
 }
 
@@ -254,4 +292,66 @@ const loadImage = async url => {
 }
 
 module.exports = loadImage;
+},{}],6:[function(require,module,exports){
+const weightedRandom = (x = Math.random()) => {
+  const A = 2;
+  const B = 0;
+  const C = 0;
+  const W = -0.5;
+
+  const y = Math.pow((A * (x + W)), 3) + B * (x + W) + C;
+
+  return y;
+}
+
+const constrain = (value, min, max) => {
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+
+const setup = (width, height) => {
+  const mutateX = current => {
+    const mutated = Math.floor(current + (weightedRandom() * width / 2));
+    return constrain(mutated, 0, width);
+  }
+  
+  const mutateY = current => {
+    const mutated = Math.floor(current + (weightedRandom() * height / 2));
+    return constrain(mutated, 0, height);
+  }
+  
+  const mutateColour = current => {
+    const mutated = Math.floor(current + (weightedRandom() * 255 / 2));
+    return constrain(mutated, 0, 255);
+  }
+  
+  const mutateAlpha = current => {
+    const mutated = current + (weightedRandom() * 0.5);
+    return constrain(mutated, 0, 1);
+  }
+
+  return {
+    mutateX,
+    mutateY,
+    mutateColour,
+    mutateAlpha,
+  }
+}
+
+// const test = async () => {
+//   const testMutate = setup(100,100).mutateAlpha;
+
+//   let testVar = 50;
+//   while (true) {
+//     testVar = testMutate(testVar)
+//     console.log(testVar);
+//     await new Promise(resolve => setTimeout(resolve, 100));
+//     // console.log(weightedRandom() * 50)
+//   }
+// }
+
+// test();
+
+module.exports = setup;
 },{}]},{},[1]);

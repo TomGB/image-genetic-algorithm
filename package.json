@@ -10,13 +10,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "browserify ./src/app.js -o ./build/bundle.js",
-    "dev": "watchify ./src/app.js -o ./build/bundle.js",
+    "dev": "watchify ./src/app.js -o ./build/bundle.js & live-server ./build",
     "deploy": "npm run build && git subtree push --prefix build origin gh-pages"
   },
   "author": "Tom Banister",
   "license": "ISC",
   "devDependencies": {
     "browserify": "^16.2.3",
+    "live-server": "^1.2.0",
     "watchify": "^3.11.0"
   }
 }
