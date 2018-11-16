@@ -1,3 +1,5 @@
+const { createCanvas } = require('canvas');
+
 const {
   compareImageCanvas,
   getImagePixels,
@@ -9,8 +11,8 @@ const drawGenomeInBrowser = require('./drawGenomeInBrowser');
 const drawTriangle = require('./drawTriangle');
 const setupMutate = require('./mutate');
 
-const width = 875;
-const height = 350;
+const width = 640;
+const height = 429;
 
 const {
   mutateX,
@@ -25,14 +27,14 @@ const mutationPercentage = 0.1;
 const cullPercentage = 0.8;
 const newBloodPercentage = 0;
 
-const enableMouse = canvas => {
-  document.addEventListener('mousemove', ({ pageX: x, pageY: y }) => {
-    const imgData = canvas.getContext('2d').getImageData(0, 0, canvas.width,canvas.height);
+// const enableMouse = canvas => {
+//   document.addEventListener('mousemove', ({ pageX: x, pageY: y }) => {
+//     const imgData = canvas.getContext('2d').getImageData(0, 0, canvas.width,canvas.height);
   
-    var i = (y * imgData.width + x)*4, d = imgData.data;
-    console.log([d[i],d[i+1],d[i+2],d[i+3]]);
-  })
-};
+//     var i = (y * imgData.width + x)*4, d = imgData.data;
+//     console.log([d[i],d[i+1],d[i+2],d[i+3]]);
+//   })
+// };
 
 const v = (init, mutateFunction) => {
   let value = init;
@@ -74,8 +76,8 @@ const newTriangle = (_p1, _p2, _p3, _colour) => {
   const attributesMap = [p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, r, g, b, a];
 
   const mutate = () => {
-    const thingToMutate = Math.floor(Math.random() * 10);
-    attributesMap[thingToMutate].mutate();
+    attributesMap.filter(() => Math.floor(Math.random()*2))
+      .forEach(attribute => attribute.mutate());
   }
 
   const clone = () => newTriangle(p1.clone(), p2.clone(), p3.clone(), colour.clone())
@@ -88,11 +90,9 @@ const newGenome = () => [...Array(numTriangles)].map(() => newTriangle());
 let population = [...Array(populationSize)].map(newGenome);
 
 const createExperiment = image => generation => generation.map(genome => {
-  const canvas = document.createElement('canvas');
+  const canvas = createCanvas(image.width, image.height);
   const ctx = canvas.getContext('2d');
 
-  canvas.width = image.width;
-  canvas.height = image.height;
   ctx.fillStyle = "white";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -160,7 +160,7 @@ const runGeneration = async (aPopulation, image, index) => {
 }
 
 const start = async () => {
-  const image = await loadImage('./beach.jpeg');
+  const image = await loadImage('./darth-maul.jpeg');
   const image2 = await loadImage('./beach2.jpg');
 
   let previousBest = 0;
@@ -168,10 +168,24 @@ const start = async () => {
   console.log(getDifference(getImagePixels(image), getImagePixels(image2)));
   let genNum = 0;
 
+  const startTimer = () => {
+    const startTime = new Date();
+
+    const endTimer = () => {
+      const endTime = new Date();
+      const timeDiff = endTime - startTime;
+      console.log('time', timeDiff);
+    }
+
+    return endTimer;
+  };
+
   while (true) {
+    const endTimer = startTimer();
     const newBest = await runGeneration(population, image, genNum++);
     if (newBest.fitness !== previousBest) {
-      await drawGenomeInBrowser(newBest.genome, image);
+      endTimer();
+      // await drawGenomeInBrowser(newBest.genome, image);
       previousBest = newBest.fitness;
     } else {
       await new Promise(resolve => setTimeout(resolve, 2));

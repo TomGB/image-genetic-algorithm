@@ -10,8 +10,8 @@ const drawGenomeInBrowser = require('./drawGenomeInBrowser');
 const drawTriangle = require('./drawTriangle');
 const setupMutate = require('./mutate');
 
-const width = 875;
-const height = 350;
+const width = 640;
+const height = 429;
 
 const {
   mutateX,
@@ -75,8 +75,8 @@ const newTriangle = (_p1, _p2, _p3, _colour) => {
   const attributesMap = [p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, r, g, b, a];
 
   const mutate = () => {
-    const thingToMutate = Math.floor(Math.random() * 10);
-    attributesMap[thingToMutate].mutate();
+    attributesMap.filter(() => Math.floor(Math.random()*2))
+      .forEach(attribute => attribute.mutate());
   }
 
   const clone = () => newTriangle(p1.clone(), p2.clone(), p3.clone(), colour.clone())
@@ -161,7 +161,7 @@ const runGeneration = async (aPopulation, image, index) => {
 }
 
 const start = async () => {
-  const image = await loadImage('./beach.jpeg');
+  const image = await loadImage('./darth-maul.jpeg');
   const image2 = await loadImage('./beach2.jpg');
 
   let previousBest = 0;
@@ -169,9 +169,23 @@ const start = async () => {
   console.log(getDifference(getImagePixels(image), getImagePixels(image2)));
   let genNum = 0;
 
+  const startTimer = () => {
+    const startTime = new Date();
+
+    const endTimer = () => {
+      const endTime = new Date();
+      const timeDiff = endTime - startTime;
+      console.log('time', timeDiff);
+    }
+
+    return endTimer;
+  };
+
   while (true) {
+    const endTimer = startTimer();
     const newBest = await runGeneration(population, image, genNum++);
     if (newBest.fitness !== previousBest) {
+      endTimer();
       await drawGenomeInBrowser(newBest.genome, image);
       previousBest = newBest.fitness;
     } else {
