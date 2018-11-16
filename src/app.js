@@ -53,6 +53,12 @@ const point = (_x, _y) => {
   return { x, y, clone };
 };
 
+const closePoint = ({ x, y }) => {
+  const newX = mutateX(x);
+  const newY = mutateY(y);
+  return point(newX, newY);
+}
+
 const rgb = (_r, _g, _b, _a) => {
   const r = _r || v(Math.floor(Math.random() * 255), mutateColour);
   const g = _g || v(Math.floor(Math.random() * 255), mutateColour);
@@ -65,8 +71,8 @@ const rgb = (_r, _g, _b, _a) => {
 
 const newTriangle = (_p1, _p2, _p3, _colour) => {
   const p1 = _p1 || point();
-  const p2 = _p2 || point();
-  const p3 = _p3 || point();
+  const p2 = _p2 || closePoint(p1);
+  const p3 = _p3 || closePoint(p2);
   const colour = _colour || rgb();
 
   const { r, g, b, a } = colour;
